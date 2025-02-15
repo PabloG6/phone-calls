@@ -54,9 +54,9 @@ export default function DashboardHeader() {
                   <BreadcrumbLink href={crumb.href}>
                     {crumb.label}
                   </BreadcrumbLink>
-                  <BreadcrumbSeparator />
                 </>
               )}
+              {index < visibleCrumbs.length ? <BreadcrumbSeparator /> : <></>}
             </BreadcrumbItem>
           ))}
           {hiddenCrumbs.length > 0 && (
