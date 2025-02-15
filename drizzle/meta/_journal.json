@@ -22,6 +22,13 @@
       "when": 1739370559642,
       "tag": "0002_groovy_barracuda",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1739599468833,
+      "tag": "0003_freezing_darkstar",
+      "breakpoints": true
     }
   ]
 }

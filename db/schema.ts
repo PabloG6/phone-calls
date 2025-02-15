@@ -1,5 +1,12 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
-
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  pgEnum,
+  decimal,
+} from "drizzle-orm/pg-core";
+export const supplierEnum = pgEnum("supplier", ["weight", "count"]);
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name"),
@@ -50,9 +57,31 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at"),
 });
 
+export const receivables = pgTable("receivables", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  supplier: text("supplier").notNull(),
+  supplierType: supplierEnum(),
+  totalCount: decimal("total").notNull(),
+  totalCost: decimal("cost").notNull(),
+  creator: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  dateReceived: timestamp("date_received"),
+});
+
+export const sales = pgTable("sales", {
+  id: text("id").primaryKey(),
+  name: text("customer").notNull(),
+  product: text("product").references(() => receivables.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  phone_number: text("phone_number"),
+  email: text("email"),
+});
 export const schema = {
   user,
   verification,
   account,
+  sales,
   session,
 };
