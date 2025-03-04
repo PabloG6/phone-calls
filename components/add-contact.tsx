@@ -1,64 +1,91 @@
-import { formatPhoneNumber } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { X } from "lucide-react";
-import { useState } from "react";
+import { Dispatch } from "react";
+import { api } from "@/server/react";
+import { addContactSchema, AddContactSchema } from "@/routes/contacts/schema";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormField, FormItem, FormLabel } from "./ui/form";
+import { PhoneInput } from "./phone-input";
+import { toast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+type Props = {
+  onOpenChange: Dispatch<React.SetStateAction<boolean | undefined>>;
+};
+export function AddContactModal({ onOpenChange }: Props) {
+  const { mutate: addContact, isPending } =
+    api.contacts.addContact.useMutation();
+  const utils = api.useUtils();
+  const form = useForm<AddContactSchema>({
+    resolver: zodResolver(addContactSchema),
+    defaultValues: { name: "", phoneNumber: "" },
+  });
 
-export function AddContactModal({ onClose }: { onClose(): void }) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-
-  const handlePhoneChange = (e: React.BaseSyntheticEvent) => {
-    setPhone(formatPhoneNumber(e.target.value));
-  };
-
-  const handleSubmit = (e: React.BaseSyntheticEvent) => {
-    e.preventDefault();
+  const handleSubmit = (
+    data: AddContactSchema,
+    e?: React.BaseSyntheticEvent,
+  ) => {
+    e?.preventDefault();
     // Here you would typically save the contact
     // For now, we just close the modal
-    onClose();
+    addContact(data, {
+      onSettled() {
+        toast({
+          description: "Successfully added contact",
+          title: "Added contact",
+        });
+        onOpenChange(false);
+        utils.contacts.list.invalidate();
+      },
+      onError() {
+        toast({
+          title: "Something went wrong",
+          variant: "destructive",
+          description: "Failed to add contact",
+        });
+      },
+    });
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-background rounded-lg shadow-lg w-full max-w-md">
-        <div className="flex items-center justify-between border-b p-4">
-          <h2 className="text-lg font-semibold">Add New Contact</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="p-4 space-y-4"
+      >
+        <FormField
+          name="name"
+          render={({ field }) => {
+            return (
+              <FormItem className="space-y-2">
+                <FormLabel htmlFor="name">Name</FormLabel>
+                <Input id="name" placeholder="Enter name" {...field} />
+              </FormItem>
+            );
+          }}
+        />
+
+        <FormField
+          name="phoneNumber"
+          render={({ field }) => {
+            return (
+              <FormItem className="space-y-2">
+                <FormLabel htmlFor="name">Name</FormLabel>
+                <PhoneInput {...field} />
+              </FormItem>
+            );
+          }}
+        />
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="outline">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending && <Loader2 />} Save Contact
           </Button>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter name"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              value={phone}
-              onChange={handlePhoneChange}
-              placeholder="Enter phone number"
-              required
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">Save Contact</Button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Form>
   );
 }

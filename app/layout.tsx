@@ -19,16 +19,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="">
       <TRPCReactProvider>
-      <body
-        className={`${inter.className} bg-background text-foreground antialiased`}
-      >
-        <main>{children}</main>
-        <Toaster />
-      </body>
+        <body
+          className={`${inter.className} bg-background text-foreground antialiased`}
+        >
+          <main>{children}</main>
+          <Toaster />
+        </body>
       </TRPCReactProvider>
-      
     </html>
   );
 }

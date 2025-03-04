@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/server/react";
 import { Call, Device } from "@twilio/voice-sdk";
+import { twilioNumber } from "@/lib/constants";
+import { toast } from "@/hooks/use-toast";
 type Props = {
   phoneNumber: string;
   onEnd: () => void;
@@ -18,41 +20,61 @@ export function CallingScreen({
   onEnd,
   contactName = null,
 }: Props) {
-  const [callStatus, setCallStatus] = useState("calling"); // calling, connected
-  const [device, setDevice] = useState<Device>();
+  const [callStatus, setCallStatus] = useState<
+    "calling" | "connected" | "failed" | "accepted" | "idle" | "disconnected"
+  >("calling"); // calling, connected
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaker, setIsSpeaker] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const { mutate, isPending } = api.tele.createToken.useMutation();
+  const { mutate } = api.tele.createOutgoingCallToken.useMutation();
   const [call, setCall] = useState<Call>();
 
-  const onAcceptCall = useCallback(() => {}, []);
-  const onDisconnectCall = useCallback(() => {}, []);
-  const onCancelCall = useCallback(() => {}, []);
+  const onAcceptCall = useCallback(() => {
+    setCallStatus("connected");
+  }, []);
+  const onDisconnectCall = useCallback(() => {
+    setCallStatus("disconnected");
+  }, []);
+  const onCancelCall = useCallback(() => {
+    setCallStatus("idle");
+  }, []);
+  const onError = useCallback(() => {
+    setCallStatus("failed");
+  }, []);
   useEffect(() => {
-    mutate("", {
+    call?.on("accept", onAcceptCall);
+    call?.on("disconnected", onDisconnectCall);
+    call?.on("cancel", onCancelCall);
+    call?.on("error", onError);
+  }, [call, onAcceptCall, onCancelCall, onDisconnectCall, onError]);
+  useEffect(() => {
+    const parsedNumber =
+      parsePhoneNumberFromString(phoneNumber)?.format("E.164");
+    if (!parsedNumber) {
+      toast({
+        description: "Invalid phone number",
+        title: "Something went wrong",
+        variant: "destructive",
+      });
+      return;
+    }
+    mutate(parsedNumber, {
       onSettled: async (value) => {
         const myDevice = new Device(value!.token);
-        setDevice(myDevice);
-        console.log(myDevice);
-        const parsedNumber = parsePhoneNumberFromString(phoneNumber);
-        await device
-          ?.connect({
-            params: { To: parsedNumber?.format("E.164") ?? "" },
-          })
-          .then(() => {
-            console.log("connected");
-          })
-          .catch((error) => {
-            console.log("error occurred when creating call", error);
-          });
-        setCallStatus("connected");
+
+        const callConnected = await myDevice?.connect({
+          params: {
+            To: parsedNumber,
+            From: twilioNumber,
+          },
+        });
+        setCall(callConnected);
       },
       onError(ctx) {
         console.log("hello", ctx.data, ctx.message, ctx.shape);
       },
     });
-  }, [mutate]);
+  }, [mutate, phoneNumber, onEnd]);
   useEffect(() => {
     let durationTimer: Timer | undefined;
     if (callStatus === "connected") {
@@ -109,7 +131,10 @@ export function CallingScreen({
             variant="destructive"
             size="icon"
             className="h-16 w-16 rounded-full"
-            onClick={onEnd}
+            onClick={() => {
+              call?.disconnect();
+              onEnd();
+            }}
           >
             <PhoneOff className="h-6 w-6" />
           </Button>

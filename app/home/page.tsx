@@ -54,7 +54,6 @@ export default function PhoneApp() {
           </div>
         </main>
       </div>
-      {showAddContact && <AddContactModal onClose={() => {}} />}
 
       {activeCall && (
         <CallingScreen

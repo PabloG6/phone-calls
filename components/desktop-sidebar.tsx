@@ -4,10 +4,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Input } from "./ui/input";
-import { JSX } from "react";
+import { Dispatch, JSX, SetStateAction, useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import { AddContactModal } from "./add-contact";
+import { DialogTitle } from "@radix-ui/react-dialog";
+import { api } from "@/server/react";
+import { ContactSelect } from "@/db/schema";
+import CallHistory from "./call-history";
 
 type DesktopSidebarProps = {
-  setInputValue: (arg0: string) => void;
+  setInputValue: Dispatch<SetStateAction<string>>;
   setSearchQuery: (arg0: string) => void;
   setShowAddContact: (arg0: boolean) => void;
   getCallTypeIcon: (arg0: "missed" | "incoming" | "outgoing") => JSX.Element;
@@ -30,12 +36,20 @@ type DesktopSidebarProps = {
 };
 export function DesktopSidebar({
   searchQuery,
-  filteredContacts,
   setSearchQuery,
-  callHistory,
+
   setInputValue,
-  setShowAddContact,
 }: DesktopSidebarProps) {
+  const [open, onOpenChange] = useState<boolean>();
+  const { data: contactList } = api.contacts.list.useQuery();
+  const [filteredContacts, setFilteredContacts] = useState<ContactSelect[]>([]);
+  useEffect(() => {
+    const contacts =
+      contactList?.filter((c) => {
+        return c.name.toLowerCase().includes(searchQuery);
+      }) ?? [];
+    setFilteredContacts(contacts);
+  }, [contactList, searchQuery]);
   return (
     <Tabs defaultValue="contacts" className="h-full flex flex-col">
       <TabsList className="grid w-full grid-cols-2">
@@ -63,25 +77,25 @@ export function DesktopSidebar({
         </div>
         <ScrollArea className="h-[calc(100vh-16rem)]">
           <div className="p-4 pt-0">
-            {filteredContacts.length > 0 ? (
+            {filteredContacts?.length > 0 ? (
               <div className="space-y-4">
                 {filteredContacts.map((contact) => (
                   <div key={contact.id} className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={contact.avatar} alt={contact.name} />
+                      <AvatarImage alt={contact.name} />
                       <AvatarFallback>{contact.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{contact.name}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {contact.phone}
+                        {contact.phoneNumber}
                       </p>
                     </div>
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8"
-                      onClick={() => setInputValue(contact.phone)}
+                      onClick={() => setInputValue(contact.e164Rep)}
                     >
                       <Phone className="h-4 w-4" />
                       <span className="sr-only">Call {contact.name}</span>
@@ -97,62 +111,22 @@ export function DesktopSidebar({
           </div>
         </ScrollArea>
         <div className="p-4 border-t">
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => setShowAddContact(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Contact
-          </Button>
+          <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogTrigger asChild>
+              <Button className="w-full" variant="outline" onClick={() => {}}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Contact
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogTitle>Add new contact</DialogTitle>
+              <AddContactModal onOpenChange={onOpenChange} />
+            </DialogContent>
+          </Dialog>
         </div>
       </TabsContent>
       <TabsContent value="history" className="flex-1 p-0">
-        <ScrollArea className="h-[calc(100vh-7rem)]">
-          <div className="p-4">
-            {callHistory.length > 0 ? (
-              <div className="space-y-4">
-                {callHistory.map((call) => (
-                  <div key={call.id} className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={call.avatar} alt={call.name} />
-                      <AvatarFallback>{call.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1">
-                        <p className="text-sm font-medium">{call.name}</p>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <span>{call.phone}</span>
-                        <span>•</span>
-                        <span>{call.time}</span>
-                        {call.duration && (
-                          <>
-                            <span>•</span>
-                            <span>{call.duration}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      onClick={() => setInputValue(call.phone)}
-                    >
-                      <Phone className="h-4 w-4" />
-                      <span className="sr-only">Call {call.name}</span>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                No call history
-              </p>
-            )}
-          </div>
-        </ScrollArea>
+        <CallHistory setInputValue={setInputValue} />
       </TabsContent>
     </Tabs>
   );

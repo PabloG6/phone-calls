@@ -33,12 +33,12 @@ export default function Page() {
 
                 onSuccess: () => {
                   setLoading(false);
-                  router.push("/dashboard");
+                  router.push("/home");
                 },
               },
               email: data.email,
               password: data.password,
-              name: "",
+              name: data.name,
             });
           }}
         >

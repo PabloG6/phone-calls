@@ -110,14 +110,7 @@ export function MobileSidebar({
             </div>
           </ScrollArea>
           <div className="p-4 border-t">
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => {
-                setShowAddContact(true);
-                onClose(true);
-              }}
-            >
+            <Button className="w-full" variant="outline" onClick={() => {}}>
               <Plus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>

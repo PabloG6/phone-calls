@@ -4,9 +4,19 @@ import {
   timestamp,
   boolean,
   pgEnum,
-  decimal,
+  bigserial,
+  integer,
 } from "drizzle-orm/pg-core";
-export const supplierEnum = pgEnum("supplier", ["weight", "count"]);
+export const callDirection = pgEnum("callDirectionEnum", [
+  "outgoing",
+  "incoming",
+]);
+export const callStatus = pgEnum("callStatus", [
+  "initiated",
+  "accepted",
+  "rejected",
+  "missed",
+]);
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name"),
@@ -57,31 +67,37 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updated_at"),
 });
 
-export const receivables = pgTable("receivables", {
-  id: text("id").primaryKey(),
+export const contacts = pgTable("contacts", {
+  id: bigserial({ mode: "bigint" }).primaryKey(),
   name: text("name").notNull(),
-  supplier: text("supplier").notNull(),
-  supplierType: supplierEnum(),
-  totalCount: decimal("total").notNull(),
-  totalCost: decimal("cost").notNull(),
-  creator: text("user_id")
+  userId: text("user")
     .notNull()
     .references(() => user.id),
-  dateReceived: timestamp("date_received"),
+  phoneNumber: text("phone_number").notNull(),
+  e164Rep: text("e164_rep").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdateFn(() => new Date()),
+});
+export type ContactSelect = typeof contacts.$inferSelect;
+export const callHistory = pgTable("callHistory", {
+  id: bigserial({ mode: "bigint" }).primaryKey(),
+  contact: bigserial("contact_id", { mode: "bigint" }).references(
+    () => contacts.id,
+  ),
+  extCallId: text("ext_call_id").notNull(),
+  anonymousCall: text("anonymous_call"),
+  status: callStatus("status"),
+  userId: text("user_id").references(() => user.id),
+  duration: integer("duration"),
+  direction: callDirection("direction").notNull(),
 });
 
-export const sales = pgTable("sales", {
-  id: text("id").primaryKey(),
-  name: text("customer").notNull(),
-  product: text("product").references(() => receivables.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  phone_number: text("phone_number"),
-  email: text("email"),
-});
 export const schema = {
   user,
   verification,
   account,
-  sales,
   session,
 };

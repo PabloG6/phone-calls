@@ -1,7 +1,6 @@
 import { GalleryVerticalEnd } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel } from "./ui/form";
 import { z } from "zod";
@@ -9,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
 const authSchema = z.object({
+  name: z.string(),
   email: z.string().email(),
   password: z.string().min(8),
 });
@@ -32,6 +32,7 @@ export function AuthForm({
   const form = useForm<z.infer<typeof authSchema>>({
     defaultValues: {
       email: "",
+      name: "login",
       password: "",
     },
     resolver: zodResolver(authSchema),
@@ -79,6 +80,25 @@ export function AuthForm({
               </div>
             </div>
             <div className="flex flex-col gap-6">
+              {authType === "signup" && (
+                <FormField
+                  name="name"
+                  render={({ field }) => {
+                    return (
+                      <FormItem className="grid gap-2">
+                        <FormLabel htmlFor="name">Name</FormLabel>
+                        <Input
+                          {...field}
+                          id="name"
+                          type="text"
+                          placeholder="John Doe"
+                          required
+                        />
+                      </FormItem>
+                    );
+                  }}
+                />
+              )}
               <FormField
                 name="email"
                 render={({ field }) => {

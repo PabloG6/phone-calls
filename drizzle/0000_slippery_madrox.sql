@@ -1,3 +1,5 @@
+CREATE TYPE "public"."callDirectionEnum" AS ENUM('outgoing', 'incoming');--> statement-breakpoint
+CREATE TYPE "public"."callStatus" AS ENUM('accepted', 'rejected', 'missed');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
@@ -14,6 +16,25 @@ CREATE TABLE "account" (
 	"updated_at" timestamp NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "callHistory" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"contact_id" bigserial NOT NULL,
+	"status" "callStatus",
+	"user_id" text,
+	"duration" integer,
+	"direction" "callDirectionEnum" NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "contacts" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"name" text,
+	"user" text NOT NULL,
+	"phone_number" text NOT NULL,
+	"e164_rep" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "session" (
 	"id" text PRIMARY KEY NOT NULL,
 	"expires_at" timestamp NOT NULL,
@@ -28,7 +49,7 @@ CREATE TABLE "session" (
 --> statement-breakpoint
 CREATE TABLE "user" (
 	"id" text PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
+	"name" text,
 	"email" text NOT NULL,
 	"email_verified" boolean NOT NULL,
 	"image" text,
@@ -47,4 +68,7 @@ CREATE TABLE "verification" (
 );
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "callHistory" ADD CONSTRAINT "callHistory_contact_id_contacts_id_fk" FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "callHistory" ADD CONSTRAINT "callHistory_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "contacts" ADD CONSTRAINT "contacts_user_user_id_fk" FOREIGN KEY ("user") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;

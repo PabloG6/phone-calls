@@ -20,7 +20,7 @@ export default function LoginPage() {
             await signIn.email({
               email: creds.email,
               password: creds.password,
-              callbackURL: "/dashboard",
+              callbackURL: "/home",
               fetchOptions: {
                 onRequest() {
                   setLoading(true);
